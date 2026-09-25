@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>五子棋</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f3ead9; color: #34261b; }
+    main { width: min(94vw, 680px); text-align: center; }
+    h1 { margin: 0 0 .35rem; }
+    .toolbar { display: flex; justify-content: center; gap: .75rem; align-items: center; flex-wrap: wrap; margin: .75rem 0 1rem; }
+    button { border: 0; border-radius: .45rem; padding: .55rem .9rem; cursor: pointer; background: #7c4d27; color: white; font-size: 1rem; }
+    button:hover { background: #5f391c; }
+    #status { min-height: 1.5em; font-weight: 700; }
+    canvas { display: block; width: min(92vw, 620px); height: min(92vw, 620px); margin: auto; border: 3px solid #5c381e; border-radius: .25rem; box-shadow: 0 8px 22px #68462233; touch-action: none; cursor: crosshair; }
+    .hint { color: #6b5542; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>五子棋</h1>
+    <div class="toolbar">
+      <label>模式：<select id="mode"><option value="ai">玩家 vs 電腦</option><option value="pvp">雙人對戰</option></select></label>
+      <button id="reset" type="button">重新開始</button>
+    </div>
+    <div id="status" aria-live="polite">黑棋（玩家）回合</div>
+    <canvas id="board" aria-label="15乘15五子棋棋盤"></canvas>
+    <p class="hint">黑棋先手。連成橫、直或任一對角線五子即可獲勝。</p>
+  </main>
+  <script>
+    'use strict';
+    const SIZE = 15;
+    const HUMAN = 1;
+    const AI = 2;
+    const canvas = document.querySelector('#board');
+    const ctx = canvas.getContext('2d');
+    const status = document.querySelector('#status');
+    const mode = document.querySelector('#mode');
+    const board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    let current = HUMAN;
+    let gameOver = false;
+    let aiThinking = false;
+    let cell = 0;
+    let padding = 0;
+
+    function resize() {
+      const cssSize = Math.min(window.innerWidth * 0.92, 620);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssSize * dpr);
+      canvas.height = Math.round(cssSize * dpr);
+      canvas.style.width = `${cssSize}px`;
+      canvas.style.height = `${cssSize}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      padding = cssSize / (SIZE + 1);
+      cell = (cssSize - padding * 2) / (SIZE - 1);
+      draw();
+    }
+
+    function draw() {
+      const size = canvas.clientWidth;
+      ctx.clearRect(0, 0, size, size);
+      ctx.fillStyle = '#ddb875';
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = '#684622';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < SIZE; i++) {
+        const p = padding + i * cell;
+        ctx.beginPath(); ctx.moveTo(padding, p); ctx.lineTo(size - padding, p); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p, padding); ctx.lineTo(p, size - padding); ctx.stroke();
+      }
+      // 星位
+      ctx.fillStyle = '#684622';
+      for (const [x, y] of [[3, 3], [11, 3], [7, 7], [3, 11], [11, 11]]) {
+        ctx.beginPath(); ctx.arc(padding + x * cell, padding + y * cell, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+        if (!board[y][x]) continue;
+        const px = padding + x * cell, py = padding + y * cell;
+        const gradient = ctx.createRadialGradient(px - cell * .25, py - cell * .3, 1, px, py, cell * .48);
+        gradient.addColorStop(0, board[y][x] === HUMAN ? '#555' : '#fff');
+        gradient.addColorStop(1, board[y][x] === HUMAN ? '#050505' : '#cfcfcf');
+        ctx.fillStyle = gradient;
+        ctx.beginPath(); ctx.arc(px, py, cell * .43, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#333'; ctx.stroke();
+      }
+    }
+
+    function inBounds(x, y) { return x >= 0 && x < SIZE && y >= 0 && y < SIZE; }
+
+    function hasWon(x, y, player) {
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+        let count = 1;
+        for (const sign of [-1, 1]) {
+          let nx = x + dx * sign, ny = y + dy * sign;
+          while (inBounds(nx, ny) && board[ny][nx] === player) { count++; nx += dx * sign; ny += dy * sign; }
+        }
+        if (count >= 5) return true;
+      }
+      return false;
+    }
+
+    function emptyCells() {
+      const result = [];
+      for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) if (!board[y][x]) result.push([x, y]);
+      return result;
+    }
+
+    // 以連線長度與開放端數量估分，AI 會優先取最高分位置。
+    function lineScore(x, y, player) {
+      let total = 0;
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+        let length = 1, open = 0;
+        for (const sign of [-1, 1]) {
+          let nx = x + dx * sign, ny = y + dy * sign;
+          while (inBounds(nx, ny) && board[ny][nx] === player) { length++; nx += dx * sign; ny += dy * sign; }
+          if (inBounds(nx, ny) && board[ny][nx] === 0) open++;
+        }
+        const weights = [0, 1, 10, 100, 1000, 100000];
+        total += (weights[Math.min(length, 5)] || 100000) * (open + 1);
+      }
+      return total;
+    }
+
+    function bestAiMove() {
+      const cells = emptyCells();
+      let best = cells[0], bestScore = -Infinity;
+      for (const [x, y] of cells) {
+        board[y][x] = AI;
+        const attack = lineScore(x, y, AI);
+        board[y][x] = HUMAN;
+        const defense = lineScore(x, y, HUMAN);
+        board[y][x] = 0;
+        const centerBonus = SIZE - (Math.abs(x - 7) + Math.abs(y - 7));
+        const score = attack + defense * 1.15 + centerBonus;
+        if (score > bestScore) { bestScore = score; best = [x, y]; }
+      }
+      return best;
+    }
+
+    function play(x, y, player) {
+      if (gameOver || board[y][x]) return;
+      board[y][x] = player;
+      draw();
+      if (hasWon(x, y, player)) {
+        gameOver = true;
+        status.textContent = player === HUMAN ? '黑棋獲勝！' : '白棋獲勝！';
+        setTimeout(() => alert(status.textContent), 20);
+        return;
+      }
+      if (!emptyCells().length) { gameOver = true; status.textContent = '和棋！'; setTimeout(() => alert('和棋！'), 20); return; }
+      current = player === HUMAN ? AI : HUMAN;
+      status.textContent = current === HUMAN ? '黑棋（玩家）回合' : '白棋（電腦）思考中…';
+      if (mode.value === 'ai' && current === AI) {
+        aiThinking = true;
+        setTimeout(() => { const move = bestAiMove(); aiThinking = false; play(move[0], move[1], AI); }, 180);
+      }
+    }
+
+    canvas.addEventListener('click', (event) => {
+      if (gameOver || aiThinking || (mode.value === 'ai' && current !== HUMAN)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.round((event.clientX - rect.left - padding) / cell);
+      const y = Math.round((event.clientY - rect.top - padding) / cell);
+      if (inBounds(x, y)) play(x, y, current);
+    });
+    document.querySelector('#reset').addEventListener('click', () => {
+      for (const row of board) row.fill(0);
+      gameOver = false; aiThinking = false; current = HUMAN;
+      status.textContent = '黑棋（玩家）回合'; draw();
+    });
+    mode.addEventListener('change', () => document.querySelector('#reset').click());
+    window.addEventListener('resize', resize);
+    resize();
+  </script>
+</body>
+</html>
