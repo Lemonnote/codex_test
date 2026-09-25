@@ -22,6 +22,8 @@
     <h1>五子棋</h1>
     <div class="toolbar">
       <label>模式：<select id="mode"><option value="ai">玩家 vs 電腦</option><option value="pvp">雙人對戰</option></select></label>
+      <label id="difficulty-wrap">難度：<select id="difficulty"><option value="easy">簡單</option><option value="normal" selected>普通</option><option value="hard">困難</option></select></label>
+      <button id="music" type="button">播放音樂</button>
       <button id="reset" type="button">重新開始</button>
     </div>
     <div id="status" aria-live="polite">黑棋（玩家）回合</div>
@@ -37,12 +39,59 @@
     const ctx = canvas.getContext('2d');
     const status = document.querySelector('#status');
     const mode = document.querySelector('#mode');
+    const difficulty = document.querySelector('#difficulty');
+    const difficultyWrap = document.querySelector('#difficulty-wrap');
+    const musicButton = document.querySelector('#music');
     const board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
     let current = HUMAN;
     let gameOver = false;
     let aiThinking = false;
     let cell = 0;
     let padding = 0;
+    let audioContext = null;
+    let musicTimer = null;
+    let musicStep = 0;
+    let musicPlaying = false;
+
+    // 使用 Web Audio API 播放簡單的循環旋律，不需要額外音檔。
+    const melody = [
+      [261.63, 0.28], [329.63, 0.28], [392.00, 0.28], [329.63, 0.28],
+      [293.66, 0.28], [349.23, 0.28], [440.00, 0.42], [392.00, 0.42]
+    ];
+
+    function playNote(frequency, duration) {
+      if (!audioContext) return;
+      const now = audioContext.currentTime;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.045, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + duration + 0.03);
+    }
+
+    async function toggleMusic() {
+      if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioContext.state === 'suspended') await audioContext.resume();
+      musicPlaying = !musicPlaying;
+      if (musicPlaying) {
+        musicButton.textContent = '停止音樂';
+        playNote(...melody[musicStep]);
+        musicStep = (musicStep + 1) % melody.length;
+        musicTimer = setInterval(() => {
+          playNote(...melody[musicStep]);
+          musicStep = (musicStep + 1) % melody.length;
+        }, 380);
+      } else {
+        clearInterval(musicTimer);
+        musicTimer = null;
+        musicButton.textContent = '播放音樂';
+      }
+    }
 
     function resize() {
       const cssSize = Math.min(window.innerWidth * 0.92, 620);
@@ -124,6 +173,18 @@
 
     function bestAiMove() {
       const cells = emptyCells();
+      const level = difficulty.value;
+      if (level === 'easy') {
+        // 簡單：優先靠近已有棋子，但保留較大的隨機性。
+        const candidates = cells.filter(([x, y]) => {
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+            if (inBounds(x + dx, y + dy) && board[y + dy][x + dx]) return true;
+          }
+          return false;
+        });
+        const pool = candidates.length ? candidates : cells;
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
       let best = cells[0], bestScore = -Infinity;
       for (const [x, y] of cells) {
         board[y][x] = AI;
@@ -132,7 +193,8 @@
         const defense = lineScore(x, y, HUMAN);
         board[y][x] = 0;
         const centerBonus = SIZE - (Math.abs(x - 7) + Math.abs(y - 7));
-        const score = attack + defense * 1.15 + centerBonus;
+        const defenseWeight = level === 'hard' ? 1.55 : 1.15;
+        const score = attack + defense * defenseWeight + centerBonus;
         if (score > bestScore) { bestScore = score; best = [x, y]; }
       }
       return best;
@@ -170,6 +232,10 @@
       status.textContent = '黑棋（玩家）回合'; draw();
     });
     mode.addEventListener('change', () => document.querySelector('#reset').click());
+    difficulty.addEventListener('change', () => document.querySelector('#reset').click());
+    musicButton.addEventListener('click', toggleMusic);
+    mode.addEventListener('change', () => { difficultyWrap.hidden = mode.value !== 'ai'; });
+    difficultyWrap.hidden = mode.value !== 'ai';
     window.addEventListener('resize', resize);
     resize();
   </script>
