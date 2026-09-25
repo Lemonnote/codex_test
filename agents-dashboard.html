@@ -27,7 +27,7 @@
     .layout > .card:first-child { display:flex; flex-direction:column; }
     .roster-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:16px; align-content:start; overflow:auto; }
     .roster-grid .agent-row { min-height:136px; padding:14px 18px; border:3px solid #c9a66d; border-radius:12px; background:#fff8df; box-shadow:3px 3px 0 #d5b47d; }
-    .roster-grid .agent-row.working { border-color:#d99419; background:#fff1bd; box-shadow:3px 3px 0 #d9941966; animation:workingPulse 1.1s ease-in-out infinite !important; will-change:transform,box-shadow; }
+    .roster-grid .agent-row.working { border-color:#d99419; background:#fff1bd; box-shadow:3px 3px 0 #d9941966; animation:workingPulse 1.1s ease-in-out infinite !important; will-change:box-shadow; }
     .roster-grid .agent-row.idle { border-color:#73a9c9; background:#edf7ff; }
     .roster-grid .agent-row.done { border-color:#6eb68b; background:#fff; }
     .roster-grid .agent-row.error { border-color:#d26972; background:#fff0f0; animation:errorPulse 1.1s ease-in-out infinite; }
@@ -42,14 +42,13 @@
     .agent-row.idle .roster-progress i { background:#6faed2; }
     .agent-row.done .roster-progress i { background:#67c99b; }
     .agent-row.error .roster-progress i { background:#e17a83; }
-    .agent-row.working .agent-icon { animation:agentFloat .6s ease-in-out infinite alternate !important; will-change:transform; }
+    .agent-row.working .agent-icon { animation:none !important; }
     .agent-row.working .row-status:before { content:'●'; display:inline-block; margin-right:4px; color:#e29a18; animation:statusBlink .7s step-end infinite; }
     .roster-session { display:block; margin-top:5px; overflow:hidden; color:#81748c; font:10px monospace; text-overflow:ellipsis; white-space:nowrap; }
     .roster-model { display:block; margin-top:4px; overflow:hidden; color:#6254a4; font-size:11px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
-    @keyframes workingPulse { 0%,100%{transform:translateY(0);box-shadow:3px 3px 0 #d9941966} 50%{transform:translateY(-2px);box-shadow:3px 6px 0 #d9941944} }
+    @keyframes workingPulse { 0%,100%{box-shadow:3px 3px 0 #d9941966} 50%{box-shadow:3px 3px 0 #d99419cc} }
     @keyframes errorPulse { 0%,100%{box-shadow:3px 3px 0 #d2697244} 50%{box-shadow:3px 3px 0 #d2697288} }
     @keyframes progressFlow { to{background-position:-220% 0} }
-    @keyframes agentFloat { from{transform:translateY(0)} to{transform:translateY(-5px) rotate(-2deg)} }
     @keyframes statusBlink { 50%{opacity:.25} }
     .roster-grid .agent-row:hover { border-color:#6254a4; transform:translateY(-2px); }
     .card { border:4px solid var(--deep); border-radius:15px; background:var(--cream); box-shadow:7px 7px 0 #463b75; overflow:hidden; }
