@@ -76,20 +76,20 @@
           <div class="mountain m1"></div><div class="mountain m2"></div>
           <div class="tree t1">🌲</div><div class="tree t2">🌳</div><div class="tree t3">🌲</div><div class="tree t4">🌳</div>
           <div class="building guild">🛡️<br>公會大廳</div><div class="building forge">⚙️<br>資料鍛造所</div>
-          <div class="agent working a1 selected" data-agent="codex"><div class="avatar">🧙‍♂️</div><strong>codex</strong><small>撰寫前端介面</small><span class="badge">施法中</span></div>
-          <div class="agent idle a2" data-agent="researcher"><div class="avatar">🧝‍♀️</div><strong>researcher</strong><small>等待新任務</small><span class="badge">待機</span></div>
-          <div class="agent done a3" data-agent="tester"><div class="avatar">🧑‍🔬</div><strong>tester</strong><small>測試已完成</small><span class="badge">完成</span></div>
-          <div class="agent error a4" data-agent="deploy"><div class="avatar">🤖</div><strong>deploy</strong><small>連線重試中</small><span class="badge">異常</span></div>
+          <div class="agent done a1 selected" data-agent="codex"><div class="avatar">🛠️</div><strong>codex</strong><small>最近工作已完成</small><span class="badge">完成</span></div>
+          <div class="agent idle a2" data-agent="research"><div class="avatar">🔎</div><strong>research</strong><small>等待新任務</small><span class="badge">待機</span></div>
+          <div class="agent done a3" data-agent="factory"><div class="avatar">🧭</div><strong>factory</strong><small>最近工作已完成</small><span class="badge">完成</span></div>
+          <div class="agent done a4" data-agent="main"><div class="avatar">🍋</div><strong>main</strong><small>最近工作已完成</small><span class="badge">完成</span></div>
         </div></div>
         <div class="legend"><span style="--c:#ffd76a">工作中</span><span style="--c:#b9d8ef">待機</span><span style="--c:#9fe4be">已完成</span><span style="--c:#ff9da0">異常</span></div>
       </section>
       <aside class="side">
         <section class="card"><div class="card-title"><h2>📜 今日戰況</h2><span>即時</span></div><div class="stats"><div class="stat"><b>04</b><span>Agent</span></div><div class="stat"><b>12</b><span>任務完成</span></div><div class="stat"><b>86%</b><span>成功率</span></div></div></section>
         <section class="card"><div class="card-title"><h2>👥 冒險者名冊</h2><select id="filter"><option value="all">全部狀態</option><option value="working">工作中</option><option value="idle">待機</option><option value="done">已完成</option><option value="error">異常</option></select></div><div class="agent-list" id="agent-list">
-          <div class="agent-row" data-agent="codex"><span class="mini">🧙‍♂️</span><div><strong>codex</strong><small>撰寫前端介面</small></div><span class="row-status" style="color:#bd8311">施法中</span></div>
-          <div class="agent-row" data-agent="researcher"><span class="mini">🧝‍♀️</span><div><strong>researcher</strong><small>等待新任務</small></div><span class="row-status" style="color:#658da9">待機</span></div>
-          <div class="agent-row" data-agent="tester"><span class="mini">🧑‍🔬</span><div><strong>tester</strong><small>測試已完成</small></div><span class="row-status" style="color:#3b9a6d">完成</span></div>
-          <div class="agent-row" data-agent="deploy"><span class="mini">🤖</span><div><strong>deploy</strong><small>連線重試中</small></div><span class="row-status" style="color:#c2535b">異常</span></div>
+          <div class="agent-row" data-agent="codex"><span class="mini">🛠️</span><div><strong>codex</strong><small>最近工作已完成</small></div><span class="row-status">完成</span></div>
+          <div class="agent-row" data-agent="research"><span class="mini">🔎</span><div><strong>research</strong><small>等待新任務</small></div><span class="row-status">待機</span></div>
+          <div class="agent-row" data-agent="factory"><span class="mini">🧭</span><div><strong>factory</strong><small>最近工作已完成</small></div><span class="row-status">完成</span></div>
+          <div class="agent-row" data-agent="main"><span class="mini">🍋</span><div><strong>main</strong><small>最近工作已完成</small></div><span class="row-status">完成</span></div>
         </div></section>
         <section class="card"><div class="card-title"><h2>🔎 Agent 詳情</h2></div><div class="detail"><p><b id="detail-name">codex</b> · <span id="detail-task">撰寫前端介面</span></p><p>目前進度 <b id="detail-progress-text">68%</b></p><div class="progress"><i id="detail-progress"></i></div><p>Session：<code id="detail-session">openclaw-main-042</code></p></div></section>
         <section class="card"><div class="card-title"><h2>💬 公會紀錄</h2></div><div class="logs" id="logs"><div class="log"><time>14:32:08</time><b>codex</b> 完成元件樣式分析</div><div class="log"><time>14:31:52</time><b>tester</b> 回報測試通過 · 18 cases</div><div class="log"><time>14:31:10</time><b>deploy</b> ⚠ Gateway timeout，準備重試</div><div class="log"><time>14:30:44</time><b>researcher</b> 已進入待機狀態</div></div></section>
@@ -101,8 +101,11 @@
       codex:{task:'撰寫前端介面',progress:68,session:'openclaw-main-042'},
       researcher:{task:'等待新任務',progress:100,session:'openclaw-research-017'},
       tester:{task:'測試已完成',progress:100,session:'openclaw-test-031'},
-      deploy:{task:'連線重試中',progress:35,session:'openclaw-deploy-009'}
+      factory:{task:'最近工作已完成',progress:100,session:'尚無 session'},
+      main:{task:'最近工作已完成',progress:100,session:'尚無 session'},
+      research:{task:'等待新任務',progress:0,session:'尚無 session'}
     };
+    const statusText = {working:'工作中', idle:'待機', done:'完成', error:'異常'};
     const agents = [...document.querySelectorAll('.agent')];
     const rows = [...document.querySelectorAll('.agent-row')];
     function selectAgent(id){
@@ -115,6 +118,29 @@
       document.querySelector('#detail-session').textContent=d.session;
     }
     [...agents,...rows].forEach(el=>el.addEventListener('click',()=>selectAgent(el.dataset.agent)));
+    function syncOpenClaw(data) {
+      const actual = data.agents || [];
+      document.querySelector('.live').innerHTML='<i class="dot"></i> LIVE · OpenClaw 已連線';
+      document.querySelector('.stats .stat:nth-child(1) b').textContent=actual.length.toString().padStart(2,'0');
+      document.querySelector('.stats .stat:nth-child(2) b').textContent=actual.filter(a=>a.status==='done').length;
+      document.querySelector('.stats .stat:nth-child(3) b').textContent=actual.length ? Math.round(actual.filter(a=>a.status!=='error').length/actual.length*100)+'%' : '—';
+      actual.forEach(a=>{
+        details[a.id]={task:a.task,progress:a.progress,session:a.sessionId};
+        const mapAgent=document.querySelector('.agent[data-agent="'+a.id+'"]');
+        if(mapAgent){ const selected=mapAgent.classList.contains('selected'); mapAgent.className='agent '+a.status+(selected?' selected':''); mapAgent.querySelector('.avatar').textContent=a.emoji; mapAgent.querySelector('strong').textContent=a.name; mapAgent.querySelector('small').textContent=a.task; mapAgent.querySelector('.badge').textContent=statusText[a.status]||a.status; }
+        let row=document.querySelector('.agent-row[data-agent="'+a.id+'"]');
+        if(!row){ row=document.createElement('div'); row.className='agent-row'; row.dataset.agent=a.id; row.addEventListener('click',()=>selectAgent(a.id)); document.querySelector('#agent-list').append(row); }
+        row.innerHTML='<span class="mini">'+a.emoji+'</span><div><strong>'+a.name+'</strong><small>'+a.task+'</small></div><span class="row-status">'+(statusText[a.status]||a.status)+'</span>';
+        row.className='agent-row '+a.status;
+      });
+      if(actual[0]) selectAgent(actual[0].id);
+    }
+    async function syncFromOpenClaw(){
+      try { const response=await fetch('/api/agents'); if(!response.ok) throw new Error('API '+response.status); syncOpenClaw(await response.json()); }
+      catch(error){ document.querySelector('.live').innerHTML='<i class="dot" style="background:#ff9da0"></i> DEMO · OpenClaw 未連線'; console.warn(error); }
+    }
+    syncFromOpenClaw();
+    setInterval(syncFromOpenClaw, 10000);
     document.querySelector('#filter').addEventListener('change',e=>{
       const state=e.target.value;
       rows.forEach(row=>{
