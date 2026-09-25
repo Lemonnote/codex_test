@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel Dino Runner</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color:#20243a; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:linear-gradient(#ffc9a9,#ffe8b4); }
+    main { width:min(96vw,960px); text-align:center; }
+    h1 { margin:0 0 8px; color:#70436b; letter-spacing:2px; text-shadow:2px 2px #fff1c8; }
+    .hud { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 auto 9px; padding:9px 14px; max-width:900px; border:3px solid #322e50; border-radius:10px; background:#fff1c8; box-shadow:4px 4px #9d6680; font-weight:800; }
+    button { border:2px solid #322e50; border-radius:7px; padding:7px 11px; background:#f49b85; color:#322e50; font-weight:800; cursor:pointer; }
+    button:hover { background:#ffb09a; }
+    canvas { display:block; width:100%; aspect-ratio:16/7; border:4px solid #322e50; border-radius:10px; background:#f4b88d; box-shadow:7px 7px #9d6680; image-rendering:pixelated; }
+    .hint { margin:12px 0; color:#70436b; font-weight:600; }
+    kbd { padding:2px 7px; border:2px solid #322e50; border-radius:5px; background:white; box-shadow:0 2px #322e50; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PIXEL DINO RUNNER</h1>
+    <div class="hud"><span>分數：<b id="score">00000</b></span><span id="state">準備開始</span><button id="music" type="button">♫ 播放音樂</button><button id="restart" type="button">重新開始</button></div>
+    <canvas id="game" aria-label="像素恐龍跑酷遊戲"></canvas>
+    <p class="hint">按 <kbd>空白鍵</kbd> 跳躍，避開仙人掌；手機可點擊畫面跳躍。</p>
+  </main>
+  <script>
+    'use strict';
+    const canvas = document.querySelector('#game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.querySelector('#score');
+    const stateEl = document.querySelector('#state');
+    const musicButton = document.querySelector('#music');
+    const restartButton = document.querySelector('#restart');
+    const W = 960, H = 420, ground = 338;
+    const dino = { x:105, y:0, w:44, h:56, vy:0, grounded:false, frame:0 };
+    let obstacles = [], particles = [], score = 0, speed = 6, spawnTimer = 0;
+    let playing = false, gameOver = false, lastTime = 0, animationId;
+    let audioContext, musicTimer, musicPlaying = false, musicStep = 0;
+    const melody = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 392];
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+    function reset() {
+      obstacles = []; particles = []; score = 0; speed = 6; spawnTimer = 0;
+      dino.y = ground - dino.h; dino.vy = 0; dino.grounded = true; dino.frame = 0;
+      playing = false; gameOver = false; stateEl.textContent = '按空白鍵開始'; scoreEl.textContent = '00000'; draw();
+    }
+    function start() { if (gameOver) reset(); playing = true; gameOver = false; stateEl.textContent = '奔跑中'; }
+    function jump() {
+      if (gameOver) { reset(); return; }
+      if (!playing) start();
+      if (dino.grounded) { dino.vy = -15.5; dino.grounded = false; burst(dino.x + 12, ground, '#fff1c8', 5); }
+    }
+    function spawnObstacle() {
+      const tall = Math.random() > .36;
+      const h = tall ? 52 + Math.random() * 26 : 32 + Math.random() * 18;
+      const w = tall ? 28 + Math.random() * 14 : 22 + Math.random() * 16;
+      obstacles.push({ x:W + 12, y:ground - h, w, h, kind:tall ? 'cactus' : 'rock' });
+    }
+    function overlaps(a,b) { return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+    function hitbox() { return {x:dino.x+8,y:dino.y+5,w:dino.w-13,h:dino.h-8}; }
+    function burst(x,y,color,count) { for(let i=0;i<count;i++) particles.push({x,y,vx:(Math.random()-.5)*3,vy:-Math.random()*3-1,life:1,color}); }
+    function update(dt) {
+      if (!playing || gameOver) return;
+      const step = Math.min(dt / 16.67, 2);
+      speed = Math.min(13, speed + .002 * step); score += .12 * step;
+      dino.vy += .72 * step; dino.y += dino.vy * step; dino.frame += step;
+      if (dino.y >= ground-dino.h) { dino.y=ground-dino.h; dino.vy=0; dino.grounded=true; }
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) { spawnObstacle(); spawnTimer = 780 + Math.random()*720 - speed*25; }
+      obstacles.forEach(o => { o.x -= speed * step; });
+      obstacles = obstacles.filter(o => o.x + o.w > -20);
+      const playerBox = hitbox();
+      if (obstacles.some(o => overlaps(playerBox,o))) { gameOver=true; playing=false; stateEl.textContent='撞到了！按空白鍵重試'; burst(dino.x+20,dino.y+25,'#f06f75',16); }
+      particles.forEach(p=>{p.x+=p.vx*step;p.y+=p.vy*step;p.vy+=.12*step;p.life-=.04*step;});
+      particles=particles.filter(p=>p.life>0);
+      scoreEl.textContent = String(Math.floor(score)).padStart(5,'0');
+    }
+    function pixelDino(x,y) {
+      const s=4, body='#4e567b', light='#7884ad', dark='#303550', eye='#fff8db';
+      const pixels = [[3,1,5,2,body],[2,3,7,5,body],[1,6,9,10,body],[0,9,10,12,body],[3,12,9,14,body],[6,5,8,7,light],[7,6,7,7,eye],[8,6,8,7,dark],[2,13,4,16,dark],[7,13,9,16,dark],[0,10,2,12,dark]];
+      pixels.forEach(([x1,y1,x2,y2,c])=>{ctx.fillStyle=c;ctx.fillRect(x+x1*s,y+y1*s,(x2-x1+1)*s,(y2-y1+1)*s);});
+      const leg = Math.floor(dino.frame/7)%2; ctx.fillStyle=dark; ctx.fillRect(x+(2+leg*4)*s,y+16*s,3*s,2*s);
+    }
+    function cactus(o) { ctx.fillStyle='#356d68'; ctx.fillRect(o.x+o.w*.35,o.y,o.w*.3,o.h); ctx.fillRect(o.x,o.y+o.h*.4,o.w*.42,7); ctx.fillRect(o.x,o.y+o.h*.25,7,o.h*.25); ctx.fillRect(o.x+o.w*.58,o.y+o.h*.57,o.w*.42,7); ctx.fillRect(o.x+o.w-7,o.y+o.h*.4,7,o.h*.25); }
+    function draw() {
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#f4b88d'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ffe0a7'; ctx.fillRect(0,0,W,ground);
+      ctx.fillStyle='#f9b873'; for(let i=0;i<7;i++) ctx.fillRect(70+i*170,72+(i%3)*28,90,4);
+      ctx.fillStyle='#d88386'; ctx.beginPath(); ctx.arc(790,94,42,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#9a617b'; ctx.fillRect(0,ground,W,H-ground); ctx.fillStyle='#604d69';
+      for(let x=0;x<W+30;x+=30) ctx.fillRect(x-(Math.floor(score*speed/8)%30),ground+13,15,4);
+      ctx.fillStyle='#443b5c'; ctx.fillRect(0,ground,W,5);
+      obstacles.forEach(o=>{if(o.kind==='cactus')cactus(o);else{ctx.fillStyle='#80627a';ctx.fillRect(o.x,o.y+o.h*.38,o.w,o.h*.62);ctx.fillStyle='#a27a87';ctx.fillRect(o.x+5,o.y+o.h*.25,o.w-10,o.h*.2);}});
+      pixelDino(dino.x,dino.y); particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4);});ctx.globalAlpha=1;
+      if (!playing && !gameOver) overlay('按空白鍵開始冒險');
+      if (gameOver) overlay('GAME OVER');
+    }
+    function overlay(text) { ctx.fillStyle='#322e50cc';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff1c8';ctx.textAlign='center';ctx.font='bold 30px system-ui';ctx.fillText(text,W/2,H/2);ctx.textAlign='start'; }
+    function loop(time) { const dt=Math.min(40,time-lastTime||16); lastTime=time; update(dt); draw(); animationId=requestAnimationFrame(loop); }
+    function note(frequency) { if(!audioContext)return; const now=audioContext.currentTime,o=audioContext.createOscillator(),g=audioContext.createGain();o.type='square';o.frequency.value=frequency;g.gain.setValueAtTime(.018,now);g.gain.exponentialRampToValueAtTime(.0001,now+.25);o.connect(g).connect(audioContext.destination);o.start();o.stop(now+.27); }
+    async function toggleMusic(){ if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')await audioContext.resume();musicPlaying=!musicPlaying;if(musicPlaying){musicButton.textContent='♫ 停止音樂';note(melody[musicStep++%melody.length]);musicTimer=setInterval(()=>note(melody[musicStep++%melody.length]),320);}else{clearInterval(musicTimer);musicButton.textContent='♫ 播放音樂';} }
+    document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();jump();}});
+    canvas.addEventListener('pointerdown',jump); musicButton.addEventListener('click',toggleMusic); restartButton.addEventListener('click',reset); window.addEventListener('resize',resize);
+    resize(); reset(); animationId=requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
