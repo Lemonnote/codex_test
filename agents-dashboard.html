@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenClaw Guild Hall</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@400;600;700;900&display=swap');
+    :root { --ink:#2a2441; --purple:#6254a4; --deep:#252344; --gold:#ffd76a; --cream:#fff6dc; --mint:#8fe0bd; --red:#f27b83; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); font-family:'Noto Sans TC',sans-serif; background:#8179b4; overflow-x:hidden; }
+    body:before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.17; background-image:linear-gradient(transparent 50%,#fff 50%); background-size:100% 4px; mix-blend-mode:screen; }
+    .shell { max-width:1440px; margin:auto; padding:22px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
+    .brand { display:flex; align-items:center; gap:14px; color:#fff; }
+    .crest { width:58px; height:58px; display:grid; place-items:center; border:4px solid #fff1a7; border-radius:16px; background:#e4879a; box-shadow:5px 5px 0 #463b75; font-size:30px; }
+    h1 { margin:0; font-family:'Press Start 2P',monospace; font-size:clamp(17px,2.5vw,29px); color:#fff1a7; text-shadow:3px 3px 0 #4a3c78; }
+    .subtitle { margin:7px 0 0; font-size:13px; color:#f4efff; }
+    .top-actions { display:flex; align-items:center; gap:10px; }
+    button, select { font:inherit; color:var(--ink); border:3px solid var(--deep); border-radius:10px; padding:10px 14px; background:var(--cream); box-shadow:3px 3px 0 var(--deep); cursor:pointer; }
+    button:active { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--deep); }
+    .live { display:flex; align-items:center; gap:8px; color:#fff; font-weight:700; font-size:13px; }
+    .dot { width:11px; height:11px; border-radius:50%; background:#7af0a9; box-shadow:0 0 0 5px #7af0a933; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(300px,.9fr); gap:18px; }
+    .card { border:4px solid var(--deep); border-radius:15px; background:var(--cream); box-shadow:7px 7px 0 #463b75; overflow:hidden; }
+    .card-title { display:flex; justify-content:space-between; align-items:center; padding:14px 17px; background:#f4c56d; border-bottom:4px solid var(--deep); }
+    .card-title h2 { margin:0; font-size:16px; font-weight:900; }
+    .map-wrap { padding:14px; background:#dce7bf; }
+    .map { position:relative; min-height:580px; overflow:hidden; border:4px solid var(--deep); border-radius:10px; background:#90ceb1; isolation:isolate; }
+    .map:before { content:""; position:absolute; inset:0; z-index:-2; background:linear-gradient(135deg,#a5dfbd 0 12%,transparent 12% 26%,#b9e7bf 26% 38%,transparent 38% 59%,#9ad8b3 59% 75%,transparent 75%), repeating-linear-gradient(0deg,#84c6a5 0 28px,#91d0ab 28px 56px); opacity:.8; }
+    .map:after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(25deg,transparent 0 44%,#fff7c8 44% 50%,#e2c976 50% 53%,transparent 53%); opacity:.78; }
+    .mountain { position:absolute; top:22px; width:0; height:0; border-left:75px solid transparent; border-right:75px solid transparent; border-bottom:115px solid #7299b0; filter:drop-shadow(4px 5px 0 #4d6f83); }
+    .m1{left:7%}.m2{right:9%;top:47px;transform:scale(.8)}
+    .tree { position:absolute; font-size:41px; filter:drop-shadow(3px 4px 0 #567a67); }
+    .t1{left:4%;top:35%}.t2{right:5%;top:18%}.t3{right:4%;bottom:16%}.t4{left:13%;bottom:7%}
+    .building { position:absolute; padding-top:42px; width:180px; height:118px; text-align:center; font-weight:900; color:#fff; border:4px solid var(--deep); background:#df8e7f; box-shadow:0 10px 0 #a35c68; }
+    .building:before { content:""; position:absolute; top:-48px; left:10px; border-left:76px solid transparent; border-right:76px solid transparent; border-bottom:52px solid #b95770; }
+    .guild { left:50%; top:16%; transform:translateX(-50%); background:#9275c3; }
+    .guild:after { content:"GUILD HALL"; position:absolute; left:24px; right:24px; bottom:15px; padding:4px; background:#4c3b73; font:9px 'Press Start 2P'; }
+    .forge { left:8%; bottom:18%; width:145px; height:90px; padding-top:29px; background:#d87968; }
+    .forge:before { border-left-width:61px; border-right-width:61px; border-bottom-color:#a64c57; }
+    .forge:after { content:"DATA FORGE"; position:absolute; left:19px; right:19px; bottom:10px; font-size:10px; }
+    .agent { position:absolute; z-index:2; width:110px; text-align:center; border:3px solid var(--deep); border-radius:12px; padding:5px 5px 7px; background:#fff8df; box-shadow:4px 4px 0 #463b75; cursor:pointer; transition:.18s transform; }
+    .agent:hover,.agent.selected { transform:translateY(-7px) scale(1.04); }
+    .agent .avatar { font-size:39px; line-height:1; filter:drop-shadow(2px 3px 0 #6c5671); }
+    .agent strong { display:block; margin-top:3px; font-size:13px; }
+    .agent small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#6b6281; font-size:10px; }
+    .badge { display:inline-block; margin-top:4px; padding:2px 6px; border-radius:10px; font-size:10px; font-weight:900; }
+    .working .badge{background:#ffd76a}.idle .badge{background:#b9d8ef}.done .badge{background:#9fe4be}.error .badge{background:#ff9da0}
+    .a1{left:31%;top:46%}.a2{right:17%;top:40%}.a3{left:50%;bottom:8%}.a4{right:4%;bottom:7%}
+    .side { display:flex; flex-direction:column; gap:18px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:13px; }
+    .stat { padding:11px 8px; text-align:center; border:3px solid #584c91; border-radius:10px; background:#fdf0bb; }
+    .stat b { display:block; font:20px 'Press Start 2P'; color:#6254a4; margin-bottom:7px; }
+    .stat span { font-size:11px; font-weight:700; }
+    .agent-list { padding:11px 14px 15px; }
+    .agent-row { display:flex; align-items:center; gap:10px; padding:10px 5px; border-bottom:2px dashed #d7bf91; cursor:pointer; }
+    .agent-row:last-child { border-bottom:0; }.mini { font-size:25px; width:34px; text-align:center; }.agent-row strong{font-size:13px}.agent-row small{display:block;color:#81748c;font-size:11px}.row-status{margin-left:auto;font-size:11px;font-weight:900}
+    .logs { padding:12px 15px 15px; max-height:260px; overflow:auto; background:#29264b; color:#fbefc2; font-family:monospace; font-size:11px; line-height:1.7; }
+    .log { border-bottom:1px solid #555078; padding:7px 0; }.log time{color:#a9a0d8;margin-right:6px}.log b{color:#ffcf72}
+    .detail { padding:14px 16px; }.detail p{margin:.4rem 0;font-size:13px}.progress{height:12px;background:#d5c8b2;border:2px solid var(--deep);border-radius:8px;overflow:hidden}.progress i{display:block;height:100%;background:#67c99b;width:68%}.legend{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 14px;font-size:11px;font-weight:700}.legend span:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;background:var(--c)}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.map{min-height:500px}}
+    @media(max-width:560px){.shell{padding:12px}.top-actions{flex-direction:column;align-items:flex-end}.map{min-height:465px}.building{transform:scale(.75);transform-origin:center}.guild{left:50%;top:13%}.a1{left:22%;top:43%}.a2{right:2%;top:36%}.a3{left:39%;bottom:8%}.a4{right:2%;bottom:1%}.agent{width:92px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><div class="crest">🦀</div><div><h1>OPENCLAW GUILD</h1><p class="subtitle">Agent 工作狀況冒險圖鑑 · 今日任務同步中</p></div></div>
+      <div class="top-actions"><div class="live"><i class="dot"></i> LIVE · 2026/09/25 14:32</div><button id="refresh" type="button">↻ 刷新世界</button></div>
+    </header>
+    <div class="layout">
+      <section class="card">
+        <div class="card-title"><h2>🌳 Agent 冒險地圖</h2><span id="clock">第 128 回合</span></div>
+        <div class="map-wrap"><div class="map" id="map">
+          <div class="mountain m1"></div><div class="mountain m2"></div>
+          <div class="tree t1">🌲</div><div class="tree t2">🌳</div><div class="tree t3">🌲</div><div class="tree t4">🌳</div>
+          <div class="building guild">🛡️<br>公會大廳</div><div class="building forge">⚙️<br>資料鍛造所</div>
+          <div class="agent working a1 selected" data-agent="codex"><div class="avatar">🧙‍♂️</div><strong>codex</strong><small>撰寫前端介面</small><span class="badge">施法中</span></div>
+          <div class="agent idle a2" data-agent="researcher"><div class="avatar">🧝‍♀️</div><strong>researcher</strong><small>等待新任務</small><span class="badge">待機</span></div>
+          <div class="agent done a3" data-agent="tester"><div class="avatar">🧑‍🔬</div><strong>tester</strong><small>測試已完成</small><span class="badge">完成</span></div>
+          <div class="agent error a4" data-agent="deploy"><div class="avatar">🤖</div><strong>deploy</strong><small>連線重試中</small><span class="badge">異常</span></div>
+        </div></div>
+        <div class="legend"><span style="--c:#ffd76a">工作中</span><span style="--c:#b9d8ef">待機</span><span style="--c:#9fe4be">已完成</span><span style="--c:#ff9da0">異常</span></div>
+      </section>
+      <aside class="side">
+        <section class="card"><div class="card-title"><h2>📜 今日戰況</h2><span>即時</span></div><div class="stats"><div class="stat"><b>04</b><span>Agent</span></div><div class="stat"><b>12</b><span>任務完成</span></div><div class="stat"><b>86%</b><span>成功率</span></div></div></section>
+        <section class="card"><div class="card-title"><h2>👥 冒險者名冊</h2><select id="filter"><option value="all">全部狀態</option><option value="working">工作中</option><option value="idle">待機</option><option value="done">已完成</option><option value="error">異常</option></select></div><div class="agent-list" id="agent-list">
+          <div class="agent-row" data-agent="codex"><span class="mini">🧙‍♂️</span><div><strong>codex</strong><small>撰寫前端介面</small></div><span class="row-status" style="color:#bd8311">施法中</span></div>
+          <div class="agent-row" data-agent="researcher"><span class="mini">🧝‍♀️</span><div><strong>researcher</strong><small>等待新任務</small></div><span class="row-status" style="color:#658da9">待機</span></div>
+          <div class="agent-row" data-agent="tester"><span class="mini">🧑‍🔬</span><div><strong>tester</strong><small>測試已完成</small></div><span class="row-status" style="color:#3b9a6d">完成</span></div>
+          <div class="agent-row" data-agent="deploy"><span class="mini">🤖</span><div><strong>deploy</strong><small>連線重試中</small></div><span class="row-status" style="color:#c2535b">異常</span></div>
+        </div></section>
+        <section class="card"><div class="card-title"><h2>🔎 Agent 詳情</h2></div><div class="detail"><p><b id="detail-name">codex</b> · <span id="detail-task">撰寫前端介面</span></p><p>目前進度 <b id="detail-progress-text">68%</b></p><div class="progress"><i id="detail-progress"></i></div><p>Session：<code id="detail-session">openclaw-main-042</code></p></div></section>
+        <section class="card"><div class="card-title"><h2>💬 公會紀錄</h2></div><div class="logs" id="logs"><div class="log"><time>14:32:08</time><b>codex</b> 完成元件樣式分析</div><div class="log"><time>14:31:52</time><b>tester</b> 回報測試通過 · 18 cases</div><div class="log"><time>14:31:10</time><b>deploy</b> ⚠ Gateway timeout，準備重試</div><div class="log"><time>14:30:44</time><b>researcher</b> 已進入待機狀態</div></div></section>
+      </aside>
+    </div>
+  </div>
+  <script>
+    const details = {
+      codex:{task:'撰寫前端介面',progress:68,session:'openclaw-main-042'},
+      researcher:{task:'等待新任務',progress:100,session:'openclaw-research-017'},
+      tester:{task:'測試已完成',progress:100,session:'openclaw-test-031'},
+      deploy:{task:'連線重試中',progress:35,session:'openclaw-deploy-009'}
+    };
+    const agents = [...document.querySelectorAll('.agent')];
+    const rows = [...document.querySelectorAll('.agent-row')];
+    function selectAgent(id){
+      const d=details[id]; if(!d)return;
+      agents.forEach(el=>el.classList.toggle('selected',el.dataset.agent===id));
+      document.querySelector('#detail-name').textContent=id;
+      document.querySelector('#detail-task').textContent=d.task;
+      document.querySelector('#detail-progress-text').textContent=d.progress+'%';
+      document.querySelector('#detail-progress').style.width=d.progress+'%';
+      document.querySelector('#detail-session').textContent=d.session;
+    }
+    [...agents,...rows].forEach(el=>el.addEventListener('click',()=>selectAgent(el.dataset.agent)));
+    document.querySelector('#filter').addEventListener('change',e=>{
+      const state=e.target.value;
+      rows.forEach(row=>{
+        const id=row.dataset.agent;
+        const show=state==='all'||document.querySelector('.agent[data-agent="'+id+'"]').classList.contains(state);
+        row.style.display=show?'flex':'none';
+      });
+    });
+    let turn=128;
+    document.querySelector('#refresh').addEventListener('click',()=>{
+      turn++; document.querySelector('#clock').textContent='第 '+turn+' 回合';
+      const now=new Date().toLocaleTimeString('zh-TW',{hour12:false});
+      const log=document.createElement('div'); log.className='log'; log.innerHTML='<time>'+now+'</time><b>system</b> 世界狀態已刷新';
+      document.querySelector('#logs').prepend(log);
+    });
+  </script>
+</body>
+</html>
