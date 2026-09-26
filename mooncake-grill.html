@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>月餅／食材九宮格大烤驗</title>
+  <style>
+    :root { --ink:#fff4d7; --gold:#ffd166; --orange:#ff8552; --panel:#21183fdd; --line:#ffcf6c66; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; overflow-x:hidden; color:var(--ink); font-family:"Noto Sans TC",system-ui,sans-serif; background:#090b27; }
+    body::before { content:""; position:fixed; inset:0; z-index:-3; background:radial-gradient(circle at 50% 12%,#313b81 0,#13183f 37%,#07091d 80%); }
+    body::after { content:""; position:fixed; inset:0; z-index:-2; opacity:.75; pointer-events:none; background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#ffd76a 1px,transparent 1px); background-size:97px 83px,139px 117px; background-position:8px 16px,42px 9px; }
+    .moon { position:fixed; z-index:-1; top:3vh; right:9vw; width:130px; height:130px; border-radius:50%; background:#fff0b1; box-shadow:0 0 35px #fff2ae,0 0 110px #fff1a855; }
+    .moon::after { content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at 30% 32%,#decf93 0 8%,transparent 9%),radial-gradient(circle at 67% 62%,#dccb8b 0 11%,transparent 12%); opacity:.55; }
+    main { width:min(1120px,94vw); margin:0 auto; padding:24px 0 36px; }
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:17px; }
+    h1 { margin:0; color:#fff1bd; font-size:clamp(1.6rem,4vw,2.7rem); letter-spacing:.09em; text-shadow:0 3px 0 #7e3b59,0 0 20px #ffc95888; }
+    .subtitle { margin:.35rem 0 0; color:#c8c6e5; font-size:.95rem; }
+    button { border:1px solid #ffda87aa; border-radius:12px; padding:.65rem .95rem; color:#341b3e; background:linear-gradient(#ffe19a,#ffa852); font:inherit; font-weight:800; cursor:pointer; box-shadow:0 4px 0 #8f4260; transition:.15s transform; }
+    button:hover { transform:translateY(-2px); } button:active { transform:translateY(2px); box-shadow:none; }
+    .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+    .stat { padding:11px 14px; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 8px 25px #0003; }
+    .stat small { display:block; color:#bbb8db; font-size:.75rem; } .stat strong { display:block; color:#ffe5a0; font-size:1.35rem; margin-top:2px; }
+    #lives { color:#ff9c8e; letter-spacing:.12em; }
+    .arena { position:relative; padding:20px; border:1px solid #ffda9270; border-radius:25px; background:linear-gradient(#17173db8,#110f2ddd); box-shadow:0 18px 55px #0007,inset 0 0 40px #ffb6500d; }
+    .arena-head { display:flex; justify-content:space-between; align-items:center; margin:0 5px 12px; color:#eadcf5; }
+    #message { min-height:1.4em; color:#ffd886; font-weight:800; } .phase { color:#aaa8d0; font-size:.9rem; }
+    .grill { position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:18px; border:8px solid #63444d; border-radius:17px; background:repeating-linear-gradient(0deg,#493a43 0 7px,#78605b 8px 11px),#504047; box-shadow:inset 0 0 0 3px #b38368,0 12px 20px #0008; }
+    .grill::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.36; background:repeating-linear-gradient(90deg,transparent 0 24px,#1a1720 25px 29px),repeating-linear-gradient(0deg,transparent 0 24px,#1a1720 25px 29px); }
+    .slot { position:relative; min-height:165px; z-index:1; display:grid; place-items:center; border:2px solid #d6a97677; border-radius:12px; background:radial-gradient(ellipse at center,#ffbd4b2c,#1f1b2b88 70%); overflow:hidden; }
+    .slot::after { content:""; position:absolute; inset:auto 12% 8px; height:8px; border-radius:50%; background:#151221; filter:blur(4px); }
+    .slot.hot { box-shadow:inset 0 0 35px #ff633644; }
+    .food { position:relative; z-index:2; width:min(84%,125px); height:90px; display:grid; place-items:center; cursor:pointer; user-select:none; filter:drop-shadow(0 7px 5px #180e1f99); transition:transform .16s; animation:flyIn .55s cubic-bezier(.2,.8,.3,1) both; }
+    .food:hover { transform:scale(1.08) rotate(-2deg); } .food.flip { animation:flip .42s; }
+    @keyframes flip { 50% { transform:rotateY(180deg) translateY(-10px); } }
+    @keyframes flyIn { from { opacity:0; transform:translate(var(--fly-x),var(--fly-y)) scale(.35) rotate(var(--fly-r)); } to { opacity:1; transform:translate(0) scale(1) rotate(0); } }
+    .food .emoji { font-size:clamp(3rem,6vw,4.5rem); line-height:1; filter:saturate(1.15); }
+    .food .label { position:absolute; bottom:-3px; padding:2px 7px; border-radius:8px; color:#fff7d6; background:#261936d9; font-size:.7rem; font-weight:700; }
+    .food .heat { position:absolute; top:-10px; right:-4px; font-size:.85rem; animation:steam 1s infinite ease-in-out; }
+    @keyframes steam { 50% { transform:translateY(-7px); opacity:.25; } }
+    .progress { position:absolute; z-index:4; left:10%; right:10%; bottom:14px; height:10px; overflow:hidden; border:1px solid #fff3b977; border-radius:10px; background:#170f26; }
+    .progress i { display:block; height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#61d6ff,#ffe16f 58%,#ff5d4c 83%); transition:width .08s linear; }
+    .timing { position:absolute; z-index:5; top:8px; left:50%; translate:-50% 0; padding:2px 7px; border-radius:7px; background:#412144cc; color:#ffe5a1; font-size:.72rem; white-space:nowrap; }
+    .legend { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-top:14px; color:#bcb9dd; font-size:.82rem; } .legend b { color:#ffdf75; }
+    .overlay { position:absolute; inset:0; z-index:10; display:none; place-items:center; padding:25px; border-radius:25px; background:#0b0920d9; text-align:center; backdrop-filter:blur(4px); } .overlay.show { display:grid; }
+    .result { max-width:440px; padding:26px; border:1px solid #ffcf7180; border-radius:22px; background:#2b1a46f2; box-shadow:0 0 40px #ffbd5644; } .result h2 { margin:.1rem 0 .5rem; color:#ffe19a; }
+    .tip { margin:16px 0 0; color:#bab7d5; font-size:.9rem; text-align:center; }
+    @media (max-width:720px) { main{padding-top:17px}.moon{width:75px;height:75px;right:5vw}.hud{grid-template-columns:repeat(2,1fr)}.slot{min-height:125px}.grill{gap:7px;padding:9px}.arena{padding:12px}.food .label{font-size:.58rem}.arena-head{display:block}.phase{display:block;margin-top:4px} }
+  </style>
+</head>
+<body>
+  <div class="moon" aria-hidden="true"></div>
+  <main>
+    <header>
+      <div><h1>月餅／食材九宮格大烤驗</h1><p class="subtitle">把握黃金熟度，翻面、夾起，成為中秋烤網大師！</p></div>
+      <div><button id="music" type="button" aria-pressed="false">♫ 播放音樂</button> <button id="restart" type="button">重新開烤</button></div>
+    </header>
+    <section class="hud" aria-label="遊戲資訊">
+      <div class="stat"><small>目前分數</small><strong id="score">0</strong></div>
+      <div class="stat"><small>生命值</small><strong id="lives">♥ ♥ ♥</strong></div>
+      <div class="stat"><small>月相</small><strong id="moonPhase">新月</strong></div>
+      <div class="stat"><small>連續完美</small><strong id="combo">0 ×</strong></div>
+    </section>
+    <section class="arena" aria-label="烤肉架遊戲區">
+      <div class="arena-head"><span id="message" aria-live="polite">食材即將登場！</span><span class="phase" id="phaseHint">黃金熟度：點擊食材翻面或夾起</span></div>
+      <div class="grill" id="grill"></div>
+      <div class="legend"><span>🟡 <b>黃金區</b>：完美加分</span><span>🔵 未熟：放回去繼續烤</span><span>🔴 烤焦：扣生命</span><span>🍊 柚子：神祕效果</span></div>
+      <div class="overlay" id="overlay"><div class="result"><h2 id="resultTitle">烤驗結束</h2><p id="resultText"></p><button id="again" type="button">再來一局</button></div></div>
+    </section>
+    <p class="tip">操作：點擊正在烤的食材。滿月期間烘烤速度加快，黃金區分數加倍；神祕柚子會帶來隨機驚喜！</p>
+  </main>
+  <script>
+    'use strict';
+    const foods = [
+      {name:'肉片', emoji:'🥩', base:8}, {name:'香腸', emoji:'🌭', base:10}, {name:'青椒', emoji:'🫑', base:7},
+      {name:'文蛤', emoji:'🐚', base:12}, {name:'棉花糖', emoji:'🍡', base:9}, {name:'月餅', emoji:'🥮', base:15}, {name:'神祕柚子', emoji:'🍊', base:0, yuzu:true}
+    ];
+    const grill = document.querySelector('#grill'), scoreEl = document.querySelector('#score'), livesEl = document.querySelector('#lives');
+    const moonPhaseEl = document.querySelector('#moonPhase'), comboEl = document.querySelector('#combo'), message = document.querySelector('#message');
+    const phaseHint = document.querySelector('#phaseHint'), overlay = document.querySelector('#overlay'), resultTitle = document.querySelector('#resultTitle'), resultText = document.querySelector('#resultText');
+    let state, timer, spawnTimer;
+    const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+    function reset() {
+      clearInterval(timer); clearTimeout(spawnTimer); state = {score:0,lives:3,combo:0,elapsed:0,phase:0,moon:false,active:true,slots:Array(9).fill(null)};
+      overlay.classList.remove('show'); grill.innerHTML='';
+      for (let i=0;i<9;i++) { const slot=document.createElement('div'); slot.className='slot'; slot.dataset.index=i; grill.append(slot); }
+      timer=setInterval(tick,80); spawn(); spawnTimer=setTimeout(spawn,900); updateHud(); message.textContent='食材即將登場！';
+    }
+    function spawn() {
+      if (!state.active) return;
+      const empty=state.slots.map((x,i)=>x?null:i).filter(i=>i!==null); if (!empty.length) { spawnTimer=setTimeout(spawn,450); return; }
+      const index=empty[Math.floor(Math.random()*empty.length)], spec=Math.random()<.1?foods[foods.length-1]:foods[Math.floor(Math.random()*(foods.length-1))];
+      const item={...spec,progress:0,dir:1,flips:0,slot:index,age:0,goal:52+Math.random()*13}; state.slots[index]=item;
+      const el=document.createElement('div'); el.className='food'; el.dataset.index=index; el.style.setProperty('--fly-x',`${Math.round((Math.random()-.5)*260)}px`); el.style.setProperty('--fly-y',`${Math.round((Math.random()-.5)*180)}px`); el.style.setProperty('--fly-r',`${Math.round((Math.random()-.5)*80)}deg`); el.innerHTML=`<span class="emoji">${item.emoji}</span><span class="label">${item.name}</span><span class="heat">♨</span>`;
+      el.addEventListener('click',()=>handleFood(index,el)); grill.children[index].append(el); grill.children[index].classList.add('hot');
+      message.textContent=`${item.name} 正在烤，抓住黃金秒數！`; spawnTimer=setTimeout(spawn,250+Math.random()*300);
+    }
+    function tick() {
+      if (!state.active) return;
+      state.elapsed += .08; state.phase=(state.phase+.08)%40; state.moon=Math.floor(state.phase/10)===2;
+      state.slots.forEach((item,i)=>{ if(!item)return; item.age+=.08; item.progress += .32*(state.moon?1.42:1); const el=grill.children[i].querySelector('.food');
+        if (el) { el.querySelector('.progress')?.remove(); let bar=document.createElement('span'); bar.className='progress'; bar.innerHTML='<i></i>'; el.append(bar); bar.querySelector('i').style.width=`${clamp(item.progress,0,100)}%`; }
+        if (item.progress>=100) { miss(i); }
+      }); updateHud();
+      refreshMusicTempo();
+    }
+    function handleFood(index,el) {
+      const item=state.slots[index]; if(!item||!state.active)return;
+      el.classList.add('flip'); setTimeout(()=>el.classList.remove('flip'),430);
+      if (item.progress<36) { item.dir=1; message.textContent='還沒熟，再烤一下！'; state.combo=0; return; }
+      if (item.progress<=76) { const bonus=state.moon?2:1; const points=item.base*bonus+state.combo*2; state.score+=points; state.combo++; if(item.yuzu){ const lucky=Math.random()<.5; if(lucky){state.lives=Math.min(3,state.lives+1);message.textContent='神祕柚子爆發好運！恢復 1 點生命！';}else{state.score+=20;message.textContent='神祕柚子帶來金色祝福！額外 +20 分！';} } else { message.textContent=`${item.name} 黃金熟度！ +${points} 分${state.moon?'（滿月雙倍）':''}`; } clearSlot(index); }
+      else { state.lives--; state.combo=0; message.textContent=`${item.name} 烤焦了！ -1 生命`; clearSlot(index); if(state.lives<=0) endGame(); }
+      updateHud();
+    }
+    function miss(index) { if(!state.slots[index])return; state.lives--;state.combo=0;message.textContent='食材烤焦了，來不及夾起！';clearSlot(index);if(state.lives<=0)endGame(); }
+    function clearSlot(index) { state.slots[index]=null; const slot=grill.children[index]; slot.classList.remove('hot'); slot.innerHTML=''; }
+    function updateHud() { scoreEl.textContent=state.score; livesEl.textContent='♥ '.repeat(Math.max(0,state.lives)).trim()||'—'; comboEl.textContent=`${state.combo} ×`; const phase=Math.floor(state.phase/10); const labels=['新月','上弦月','盈凸月','滿月']; moonPhaseEl.textContent=labels[phase]; moonPhaseEl.style.color=state.moon?'#fff1a5':''; document.querySelector('.moon').style.opacity=phase===0?.35:phase===1?.58:phase===2?.8:1; phaseHint.textContent=state.moon?'🌕 滿月加速中・黃金區雙倍加分！':'黃金熟度：點擊食材翻面或夾起'; }
+    function endGame() { state.active=false;clearInterval(timer);clearTimeout(spawnTimer);resultTitle.textContent='烤驗結束';resultText.innerHTML=`最終分數：<strong>${state.score}</strong><br>最高連續完美：${state.combo} 次`;overlay.classList.add('show'); }
+    let audioContext=null, musicTimer=null, musicOn=false, musicStep=0, musicFast=false;
+    const musicNotes=[261.63,329.63,392,523.25,392,329.63,293.66,349.23,440,587.33,440,349.23];
+    function playNote(freq,duration=.32){ if(!audioContext)return; const now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.type='triangle'; osc.frequency.value=freq; gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(.045,now+.03); gain.gain.exponentialRampToValueAtTime(.0001,now+duration); osc.connect(gain).connect(audioContext.destination); osc.start(now); osc.stop(now+duration+.04); }
+    function refreshMusicTempo(){ const danger=state.slots.some(item=>item&&item.progress>=70&&item.progress<100); if(!musicOn||danger===musicFast)return; musicFast=danger; clearInterval(musicTimer); musicTimer=setInterval(()=>{playNote(musicNotes[musicStep],musicFast?.19:.32);musicStep=(musicStep+1)%musicNotes.length;},musicFast?190:360); message.textContent=danger?'⚠ 有食材快烤焦了！音樂節奏加快！':message.textContent; }
+    async function toggleMusic(){ if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended')await audioContext.resume(); musicOn=!musicOn; const button=document.querySelector('#music'); button.textContent=musicOn?'♫ 關閉音樂':'♫ 播放音樂'; button.setAttribute('aria-pressed',String(musicOn)); if(musicOn){ musicFast=state.slots.some(item=>item&&item.progress>=70&&item.progress<100); playNote(musicNotes[musicStep]); musicStep=(musicStep+1)%musicNotes.length; musicTimer=setInterval(()=>{playNote(musicNotes[musicStep],musicFast?.19:.32);musicStep=(musicStep+1)%musicNotes.length;},musicFast?190:360); }else{clearInterval(musicTimer);musicTimer=null;musicFast=false;} }
+    document.querySelector('#music').addEventListener('click',toggleMusic); document.querySelector('#restart').addEventListener('click',reset); document.querySelector('#again').addEventListener('click',reset); reset();
+  </script>
+</body>
+</html>
