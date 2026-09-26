@@ -30,7 +30,10 @@
     .slot { position:relative; min-height:165px; z-index:1; display:grid; place-items:center; border:2px solid #d6a97677; border-radius:12px; background:radial-gradient(ellipse at center,#ffbd4b2c,#1f1b2b88 70%); overflow:hidden; }
     .slot::after { content:""; position:absolute; inset:auto 12% 8px; height:8px; border-radius:50%; background:#151221; filter:blur(4px); }
     .slot.hot { box-shadow:inset 0 0 35px #ff633644; }
-    .food { position:relative; z-index:2; width:min(84%,125px); height:90px; display:grid; place-items:center; cursor:pointer; user-select:none; filter:drop-shadow(0 7px 5px #180e1f99); transition:transform .16s; animation:flyIn .55s cubic-bezier(.2,.8,.3,1) both; }
+    .food { position:relative; z-index:2; width:min(84%,125px); height:90px; display:grid; place-items:center; cursor:pointer; user-select:none; border:3px solid #72b8d7; border-radius:18px; background:linear-gradient(145deg,#4e9fc2,#214d83); box-shadow:inset 0 0 18px #a9efff55,0 0 14px #3ba9df55; filter:drop-shadow(0 7px 5px #180e1f99); transition:transform .16s,background .25s,border-color .25s,box-shadow .25s; animation:flyIn .55s cubic-bezier(.2,.8,.3,1) both; }
+    .food.gold { border-color:#ffe57c; background:linear-gradient(145deg,#ffe983,#e58a27); box-shadow:inset 0 0 18px #fff8b877,0 0 20px #ffc84eaa; }
+    .food.warning { border-color:#ffb047; background:linear-gradient(145deg,#ff9d45,#c62e35); box-shadow:inset 0 0 18px #ffd26d66,0 0 20px #ff4b3faa; animation:dangerPulse .55s ease-in-out infinite alternate; }
+    @keyframes dangerPulse { to { box-shadow:inset 0 0 18px #ffd26d99,0 0 30px #ff3d58dd; } }
     .food:hover { transform:scale(1.08) rotate(-2deg); } .food.flip { animation:flip .42s; }
     @keyframes flip { 50% { transform:rotateY(180deg) translateY(-10px); } }
     @keyframes flyIn { from { opacity:0; transform:translate(var(--fly-x),var(--fly-y)) scale(.35) rotate(var(--fly-r)); } to { opacity:1; transform:translate(0) scale(1) rotate(0); } }
@@ -38,8 +41,6 @@
     .food .label { position:absolute; bottom:-3px; padding:2px 7px; border-radius:8px; color:#fff7d6; background:#261936d9; font-size:.7rem; font-weight:700; }
     .food .heat { position:absolute; top:-10px; right:-4px; font-size:.85rem; animation:steam 1s infinite ease-in-out; }
     @keyframes steam { 50% { transform:translateY(-7px); opacity:.25; } }
-    .progress { position:absolute; z-index:4; left:10%; right:10%; bottom:14px; height:10px; overflow:hidden; border:1px solid #fff3b977; border-radius:10px; background:#170f26; }
-    .progress i { display:block; height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#61d6ff,#ffe16f 58%,#ff5d4c 83%); transition:width .08s linear; }
     .timing { position:absolute; z-index:5; top:8px; left:50%; translate:-50% 0; padding:2px 7px; border-radius:7px; background:#412144cc; color:#ffe5a1; font-size:.72rem; white-space:nowrap; }
     .legend { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-top:14px; color:#bcb9dd; font-size:.82rem; } .legend b { color:#ffdf75; }
     .overlay { position:absolute; inset:0; z-index:10; display:none; place-items:center; padding:25px; border-radius:25px; background:#0b0920d9; text-align:center; backdrop-filter:blur(4px); } .overlay.show { display:grid; }
@@ -53,7 +54,7 @@
   <main>
     <header>
       <div><h1>月餅／食材九宮格大烤驗</h1><p class="subtitle">把握黃金熟度，翻面、夾起，成為中秋烤網大師！</p></div>
-      <div><button id="music" type="button" aria-pressed="false">♫ 播放音樂</button> <button id="restart" type="button">重新開烤</button></div>
+      <div><button id="music" type="button" aria-pressed="true">♫ 關閉音樂</button> <button id="restart" type="button">重新開烤</button></div>
     </header>
     <section class="hud" aria-label="遊戲資訊">
       <div class="stat"><small>目前分數</small><strong id="score">0</strong></div>
@@ -81,7 +82,7 @@
     let state, timer, spawnTimer;
     const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
     function reset() {
-      clearInterval(timer); clearTimeout(spawnTimer); state = {score:0,lives:3,combo:0,elapsed:0,phase:0,moon:false,active:true,slots:Array(9).fill(null)};
+      clearInterval(timer); clearTimeout(spawnTimer); state = {score:0,lives:3,combo:0,bestCombo:0,elapsed:0,phase:0,moon:false,active:true,slots:Array(9).fill(null)};
       overlay.classList.remove('show'); grill.innerHTML='';
       for (let i=0;i<9;i++) { const slot=document.createElement('div'); slot.className='slot'; slot.dataset.index=i; grill.append(slot); }
       timer=setInterval(tick,80); spawn(); spawnTimer=setTimeout(spawn,900); updateHud(); message.textContent='食材即將登場！';
@@ -91,7 +92,7 @@
       const empty=state.slots.map((x,i)=>x?null:i).filter(i=>i!==null); if (!empty.length) { spawnTimer=setTimeout(spawn,450); return; }
       const index=empty[Math.floor(Math.random()*empty.length)], spec=Math.random()<.1?foods[foods.length-1]:foods[Math.floor(Math.random()*(foods.length-1))];
       const item={...spec,progress:0,dir:1,flips:0,slot:index,age:0,goal:52+Math.random()*13}; state.slots[index]=item;
-      const el=document.createElement('div'); el.className='food'; el.dataset.index=index; el.style.setProperty('--fly-x',`${Math.round((Math.random()-.5)*260)}px`); el.style.setProperty('--fly-y',`${Math.round((Math.random()-.5)*180)}px`); el.style.setProperty('--fly-r',`${Math.round((Math.random()-.5)*80)}deg`); el.innerHTML=`<span class="emoji">${item.emoji}</span><span class="label">${item.name}</span><span class="heat">♨</span>`;
+      const el=document.createElement('div'); el.className='food raw'; el.dataset.index=index; el.style.setProperty('--fly-x',`${Math.round((Math.random()-.5)*260)}px`); el.style.setProperty('--fly-y',`${Math.round((Math.random()-.5)*180)}px`); el.style.setProperty('--fly-r',`${Math.round((Math.random()-.5)*80)}deg`); el.innerHTML=`<span class="emoji">${item.emoji}</span><span class="label">${item.name}</span><span class="heat">♨</span>`;
       el.addEventListener('click',()=>handleFood(index,el)); grill.children[index].append(el); grill.children[index].classList.add('hot');
       message.textContent=`${item.name} 正在烤，抓住黃金秒數！`; spawnTimer=setTimeout(spawn,250+Math.random()*300);
     }
@@ -99,7 +100,7 @@
       if (!state.active) return;
       state.elapsed += .08; state.phase=(state.phase+.08)%40; state.moon=Math.floor(state.phase/10)===2;
       state.slots.forEach((item,i)=>{ if(!item)return; item.age+=.08; item.progress += .32*(state.moon?1.42:1); const el=grill.children[i].querySelector('.food');
-        if (el) { el.querySelector('.progress')?.remove(); let bar=document.createElement('span'); bar.className='progress'; bar.innerHTML='<i></i>'; el.append(bar); bar.querySelector('i').style.width=`${clamp(item.progress,0,100)}%`; }
+        if (el) { el.classList.toggle('gold',item.progress>=36&&item.progress<70); el.classList.toggle('warning',item.progress>=70); }
         if (item.progress>=100) { miss(i); }
       }); updateHud();
       refreshMusicTempo();
@@ -108,20 +109,21 @@
       const item=state.slots[index]; if(!item||!state.active)return;
       el.classList.add('flip'); setTimeout(()=>el.classList.remove('flip'),430);
       if (item.progress<36) { item.dir=1; message.textContent='還沒熟，再烤一下！'; state.combo=0; return; }
-      if (item.progress<=76) { const bonus=state.moon?2:1; const points=item.base*bonus+state.combo*2; state.score+=points; state.combo++; if(item.yuzu){ const lucky=Math.random()<.5; if(lucky){state.lives=Math.min(3,state.lives+1);message.textContent='神祕柚子爆發好運！恢復 1 點生命！';}else{state.score+=20;message.textContent='神祕柚子帶來金色祝福！額外 +20 分！';} } else { message.textContent=`${item.name} 黃金熟度！ +${points} 分${state.moon?'（滿月雙倍）':''}`; } clearSlot(index); }
+      if (item.progress<=76) { const bonus=state.moon?2:1; const points=item.base*bonus+state.combo*2; state.score+=points; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo); if(item.yuzu){ const lucky=Math.random()<.5; if(lucky){state.lives=Math.min(3,state.lives+1);message.textContent='神祕柚子爆發好運！恢復 1 點生命！';}else{state.score+=20;message.textContent='神祕柚子帶來金色祝福！額外 +20 分！';} } else { message.textContent=`${item.name} 黃金熟度！ +${points} 分${state.moon?'（滿月雙倍）':''}`; } clearSlot(index); }
       else { state.lives--; state.combo=0; message.textContent=`${item.name} 烤焦了！ -1 生命`; clearSlot(index); if(state.lives<=0) endGame(); }
       updateHud();
     }
     function miss(index) { if(!state.slots[index])return; state.lives--;state.combo=0;message.textContent='食材烤焦了，來不及夾起！';clearSlot(index);if(state.lives<=0)endGame(); }
     function clearSlot(index) { state.slots[index]=null; const slot=grill.children[index]; slot.classList.remove('hot'); slot.innerHTML=''; }
     function updateHud() { scoreEl.textContent=state.score; livesEl.textContent='♥ '.repeat(Math.max(0,state.lives)).trim()||'—'; comboEl.textContent=`${state.combo} ×`; const phase=Math.floor(state.phase/10); const labels=['新月','上弦月','盈凸月','滿月']; moonPhaseEl.textContent=labels[phase]; moonPhaseEl.style.color=state.moon?'#fff1a5':''; document.querySelector('.moon').style.opacity=phase===0?.35:phase===1?.58:phase===2?.8:1; phaseHint.textContent=state.moon?'🌕 滿月加速中・黃金區雙倍加分！':'黃金熟度：點擊食材翻面或夾起'; }
-    function endGame() { state.active=false;clearInterval(timer);clearTimeout(spawnTimer);resultTitle.textContent='烤驗結束';resultText.innerHTML=`最終分數：<strong>${state.score}</strong><br>最高連續完美：${state.combo} 次`;overlay.classList.add('show'); }
-    let audioContext=null, musicTimer=null, musicOn=false, musicStep=0, musicFast=false;
+    function endGame() { state.active=false;clearInterval(timer);clearTimeout(spawnTimer);resultTitle.textContent='烤驗結束';resultText.innerHTML=`最終分數：<strong>${state.score}</strong><br>最高連續完美：${state.bestCombo} 次`;overlay.classList.add('show'); }
+    let audioContext=null, musicTimer=null, musicOn=true, musicStarted=false, musicStep=0, musicFast=false;
     const musicNotes=[261.63,329.63,392,523.25,392,329.63,293.66,349.23,440,587.33,440,349.23];
-    function playNote(freq,duration=.32){ if(!audioContext)return; const now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.type='triangle'; osc.frequency.value=freq; gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(.045,now+.03); gain.gain.exponentialRampToValueAtTime(.0001,now+duration); osc.connect(gain).connect(audioContext.destination); osc.start(now); osc.stop(now+duration+.04); }
+    function playNote(freq,duration=.32){ if(!audioContext)return; const now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.type='triangle'; osc.frequency.value=freq; gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(.09,now+.03); gain.gain.exponentialRampToValueAtTime(.0001,now+duration); osc.connect(gain).connect(audioContext.destination); osc.start(now); osc.stop(now+duration+.04); }
+    async function startMusic(){ if(!musicOn||musicStarted)return; if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended')await audioContext.resume(); musicStarted=true; playNote(musicNotes[musicStep]); musicStep=(musicStep+1)%musicNotes.length; musicTimer=setInterval(()=>{playNote(musicNotes[musicStep],musicFast?.19:.32);musicStep=(musicStep+1)%musicNotes.length;},musicFast?190:360); }
     function refreshMusicTempo(){ const danger=state.slots.some(item=>item&&item.progress>=70&&item.progress<100); if(!musicOn||danger===musicFast)return; musicFast=danger; clearInterval(musicTimer); musicTimer=setInterval(()=>{playNote(musicNotes[musicStep],musicFast?.19:.32);musicStep=(musicStep+1)%musicNotes.length;},musicFast?190:360); message.textContent=danger?'⚠ 有食材快烤焦了！音樂節奏加快！':message.textContent; }
-    async function toggleMusic(){ if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)(); if(audioContext.state==='suspended')await audioContext.resume(); musicOn=!musicOn; const button=document.querySelector('#music'); button.textContent=musicOn?'♫ 關閉音樂':'♫ 播放音樂'; button.setAttribute('aria-pressed',String(musicOn)); if(musicOn){ musicFast=state.slots.some(item=>item&&item.progress>=70&&item.progress<100); playNote(musicNotes[musicStep]); musicStep=(musicStep+1)%musicNotes.length; musicTimer=setInterval(()=>{playNote(musicNotes[musicStep],musicFast?.19:.32);musicStep=(musicStep+1)%musicNotes.length;},musicFast?190:360); }else{clearInterval(musicTimer);musicTimer=null;musicFast=false;} }
-    document.querySelector('#music').addEventListener('click',toggleMusic); document.querySelector('#restart').addEventListener('click',reset); document.querySelector('#again').addEventListener('click',reset); reset();
+    async function toggleMusic(){ musicOn=!musicOn; const button=document.querySelector('#music'); button.textContent=musicOn?'♫ 關閉音樂':'♫ 播放音樂'; button.setAttribute('aria-pressed',String(musicOn)); if(musicOn){ musicFast=state.slots.some(item=>item&&item.progress>=70&&item.progress<100); await startMusic(); }else{clearInterval(musicTimer);musicTimer=null;musicStarted=false;musicFast=false;} }
+    document.addEventListener('pointerdown',()=>{startMusic();},{once:true}); document.addEventListener('keydown',()=>{startMusic();},{once:true}); document.querySelector('#music').addEventListener('click',toggleMusic); document.querySelector('#restart').addEventListener('click',reset); document.querySelector('#again').addEventListener('click',reset); reset();
   </script>
 </body>
 </html>
