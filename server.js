@@ -4,7 +4,10 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 
 const PORT = Number(process.env.AGENT_DASHBOARD_PORT || 8787);
-const HOST = process.env.AGENT_DASHBOARD_HOST || '127.0.0.1';
+// Listen on all local interfaces so the dashboard is reachable through the
+// Tailscale interface as well as from this machine. Override this with
+// AGENT_DASHBOARD_HOST when a more restrictive bind address is required.
+const HOST = process.env.AGENT_DASHBOARD_HOST || '0.0.0.0';
 const ROOT = __dirname;
 const eventClients = new Set();
 let refreshBusy = false;
